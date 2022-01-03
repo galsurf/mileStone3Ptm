@@ -6,9 +6,12 @@ import java.nio.file.Files;
 
 public class Commands {
 
+	///
 	public TimeSeries tsTrain ;
 	public TimeSeries tsTest ;
+	public TimeSeries anomalies ;
 	public SimpleAnomalyDetector sAd;
+	///
 
 	// Default IO interface
 	public interface DefaultIO{
@@ -47,29 +50,35 @@ public class Commands {
 			this.description=description;
 		}
 		
-		public abstract void execute() throws IOException;
+		public abstract void execute();
 	}
-	
-	// Command class for example:
-	public class ExampleCommand extends Command{
 
-		public ExampleCommand() {
-			super("this is an example of command");
+	public class Command_0_printMenu extends Command{
+
+		public Command_0_printMenu(){
+			super("menu\n");
 		}
-
 		@Override
-		public void execute() {
-			dio.write(description);
+		public void execute()  {
+			dio.write("welcome to the Anomaly Detection Server.\n" +
+					"Please choose an option:\n" +
+					"1. upload a time series csv file\n" +
+					"2. algoritem setting\n" +
+					"3. detect anomalies\n" +
+					"4. display results\n" +
+					"5. upload anomalies and analyze results\n" +
+					"6. exit\n");
 		}
 	}
 
-	public class Command1UpCsvFile extends Command{//first Command//1//
-		public Command1UpCsvFile() {
+
+	public class Command_1_UpCsvFile extends Command{//first Command//1//
+		public Command_1_UpCsvFile() {
 			super("1. upload a time series csv file\n");
 		}
 
 		@Override
-		public void execute() throws IOException {
+		public void execute() {
 			//first upload//
 			dio.write("Please upload your local train CSV file.\n");
 
@@ -83,8 +92,12 @@ public class Commands {
 			tsTrain = new TimeSeries(csvFileTrainName);
 			File trainFromClient = new File(csvFileTrainName);
 			File trainFile = new File("anomalyTrain.csv");
-			Files.copy(trainFromClient.toPath() , trainFile.toPath());
-			dio.write("Upload comple.\n");
+			try {
+				Files.copy(trainFromClient.toPath() , trainFile.toPath());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			dio.write("Upload complete.\n");
 
 			//second upload//
 			dio.write("Please upload your local test CSV file.\n");
@@ -97,40 +110,44 @@ public class Commands {
 			tsTest = new TimeSeries(csvFileTrainName);
 			File testFromClient = new File(csvFileTestName);
 			File testFile = new File("anomalyTest.scv");
-			Files.copy(testFromClient.toPath() , testFile.toPath());
-			dio.write("Upload comple.\n");
+			try {
+				Files.copy(testFromClient.toPath() , testFile.toPath());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			dio.write("Upload complete.\n");
 			return;
 		}
 	}
 
-	public class Command2AlgoSetting extends Command{//secondCommand2//
-		public Command2AlgoSetting() {
+	public class Command_2_AlgoSetting extends Command{//secondCommand2//
+		public Command_2_AlgoSetting() {
 			super("2. algorithm setting");
 		}
 
 		@Override
 		public void execute() {
+			sAd = new SimpleAnomalyDetector();
 			dio.write("The current correlation threshold is " +
-					SimpleAnomalyDetector.CORRELATION_THRESHOLD);
-			dio.write("Type a new threshold");
+					sAd.CORRELATION_THRESHOLD + "\n");
+			dio.write("Type a new threshold\n");
 			double newTresHold = (double) dio.readVal();
 			while (newTresHold <= 0 || newTresHold >= 1){
 				dio.write("please choose a value between 0 and 1.");
 				newTresHold = (double) dio.readVal();
 			}
-			SimpleAnomalyDetector.CORRELATION_THRESHOLD = newTresHold;
+			sAd.CORRELATION_THRESHOLD = newTresHold;
 			return;
 		}
 	}
 
-	public class Command3Detect extends Command{
-		public Command3Detect() {
+	public class Command_3_Detect extends Command{
+		public Command_3_Detect() {
 			super("3. detect anomalies");
 		}
 
 		@Override
 		public void execute() {
-		sAd = new SimpleAnomalyDetector();
 		sAd.learnNormal(tsTrain);
 		sAd.detect(tsTest);
 
@@ -139,8 +156,8 @@ public class Commands {
 		}
 	}
 
-	public class Command4Results extends Command{
-		public Command4Results() {
+	public class Command_4_Results extends Command{
+		public Command_4_Results() {
 			super("4. display results\n");
 		}
 
@@ -155,8 +172,8 @@ public class Commands {
 		}
 	}
 
-	public class Command5UpAndAnalayze extends Command{
-		public Command5UpAndAnalayze() {
+	public class Command_5_UpAndAnalayze extends Command{
+		public Command_5_UpAndAnalayze() {
 			super("5. upload anomalies and analyze results\n");
 		}
 
@@ -165,21 +182,10 @@ public class Commands {
 			dio.write("Please upload your local anomalies file.\n");
 
 
-		}
-	}
-
-	public class Command6Exit extends Command{
-		public Command6Exit() {
-			super("6. exit\n");
-		}
-
-		@Override
-		public void execute() {
-
-
 
 		}
 	}
+
 
 
 

@@ -14,43 +14,28 @@ public class CLI {
 		c=new Commands(dio); 
 		commands=new ArrayList<>();
 
-		// example: commands.add(c.new ExampleCommand());
-
-		commands.add(c.new Command1UpCsvFile());
-		commands.add(c.new Command2AlgoSetting());
-		commands.add(c.new Command2AlgoSetting());
-		commands.add(c.new Command3Detect());
-		commands.add(c.new Command4Results());
-		commands.add(c.new Command5UpAndAnalayze());
-		commands.add(c.new Command6Exit());
-
-		// implement
+		commands.add(c.new Command_0_printMenu());
+		commands.add(c.new Command_1_UpCsvFile());
+		commands.add(c.new Command_2_AlgoSetting());
+		commands.add(c.new Command_3_Detect());
+		commands.add(c.new Command_4_Results());
+		commands.add(c.new Command_5_UpAndAnalayze());
 	}
-	
+
 	public void start() {
-		// implement
-		this.printMenu();
-		this.commands.get(((int) dio.readVal())- 1);//1
-		this.printMenu();
-		this.commands.get(((int) dio.readVal())- 1);//2
-		this.printMenu();
-		this.commands.get(((int) dio.readVal())- 1);//3
-		this.printMenu();
-		this.commands.get(((int) dio.readVal())- 1);//4
-		this.printMenu();
-		this.commands.get(((int) dio.readVal())- 1);//5
-		this.printMenu();
 
-	}
-
-	public void printMenu(){
-		dio.write("welcome to the Anomaly Detection Server.\n" +
-				"Please choose an option:\n" +
-				"1. upload a time series csv file\n" +
-				"2. algoritem setting\n" +
-				"3. detect anomalies\n" +
-				"4. display results\n" +
-				"5. upload anomalies and analyze results\n" +
-				"6. exit\n");
+		int commandFromClient;
+		this.commands.get(0).execute();//print menu
+		while ( (commandFromClient = (int)dio.readVal()) != 6) {
+			if(commandFromClient < 1 || commandFromClient > 6)
+				dio.write("wrong index, please choose number between 1 to 6\n ");
+			else {
+				this.commands.get(commandFromClient).execute();
+				this.commands.get(0).execute();//print menu
+			}
+		}
 	}
 }
+
+
+
