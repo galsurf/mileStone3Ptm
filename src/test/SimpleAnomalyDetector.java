@@ -51,36 +51,22 @@ public static double CORRELATION_THRESHOLD =  0.9;
 
 	@Override
 	public List<AnomalyReport> detect(TimeSeries ts) {
-		for(CorrelatedFeatures c:this.correlatedFeaturesList){
-			int timeStep = 0;
-			float[] floatArray1 = new float[ts.columns.get(c.feature1).size()];
-			 floatArray1 = ts.stringToFloat(ts.columns.get(c.feature1));
 
-			float[] floatArray2 = new float[ts.columns.get(c.feature2).size()];
-			 floatArray2 = ts.stringToFloat(ts.columns.get(c.feature2));
+		for(CorrelatedFeatures c : correlatedFeaturesList) {
+			float[] x = new float[ts.columns.get(c.feature1).size()];
+			 x = ts.stringToFloat(ts.columns.get(c.feature1));
 
-			Point[] myPoints = new Point[floatArray1.length];
-			for(int j = 0; j < myPoints.length ; j++){
-				myPoints[j] = new Point(floatArray1[j] , floatArray2[j]);
-			}
-			float tempTresHold;
-			for(int n=0; n < myPoints.length ; n++){
-				tempTresHold = StatLib.dev(myPoints[n] , myPoints);
-				timeStep++;
-				if(tempTresHold > c.threshold){
-					AnomalyReport tempReport = new AnomalyReport(c.feature1+ "-" +
-							c.feature2, timeStep );
-					anomalyReports.add(tempReport);
-					timeStep++;
+			float[] y = new float[ts.columns.get(c.feature2).size()];
+			 y = ts.stringToFloat(ts.columns.get(c.feature2));
+			for(int i=0;i<x.length;i++){
+				if(Math.abs(y[i] - c.lin_reg.f(x[i]))>c.threshold){
+					String d=c.feature1 + "-" + c.feature2;
+					anomalyReports.add(new AnomalyReport(d,(i+1)));
 				}
-
 			}
 		}
-
-
 		return anomalyReports;
 	}
-
 	public List<CorrelatedFeatures> getNormalModel(){
 		return correlatedFeaturesList;
 	}

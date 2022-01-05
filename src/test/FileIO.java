@@ -28,6 +28,7 @@ public class FileIO implements DefaultIO{
 	@Override
 	public void write(String text) {
 		out.print(text);
+		out.flush();
 	}
 
 	@Override
@@ -38,6 +39,7 @@ public class FileIO implements DefaultIO{
 	@Override
 	public void write(float val) {
 		out.print(val);
+
 	}
 
 	public void close() {

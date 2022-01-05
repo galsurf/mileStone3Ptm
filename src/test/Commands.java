@@ -1,18 +1,11 @@
 package test;
 
-import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.PrintWriter;
 
 public class Commands {
-
-	///
-	public TimeSeries tsTrain ;
-	public TimeSeries tsTest ;
-	public TimeSeries anomalies ;
-	public SimpleAnomalyDetector sAd;
-	///
-
 	// Default IO interface
 	public interface DefaultIO{
 		public String readText() throws IOException;
@@ -35,13 +28,14 @@ public class Commands {
 	
 	// the shared state of all commands
 	private class SharedState{
-		// implement here whatever you need
-		
+
+		public static TimeSeries tsTrain ;
+		public static TimeSeries tsTest ;
+		public SimpleAnomalyDetector sAd;
 	}
 	
 	private  SharedState sharedState=new SharedState();
 
-	
 	// Command abstract class
 	public abstract class Command{
 		protected String description;
@@ -60,17 +54,16 @@ public class Commands {
 		}
 		@Override
 		public void execute()  {
-			dio.write("welcome to the Anomaly Detection Server.\n" +
+			dio.write("Welcome to the Anomaly Detection Server.\n" +
 					"Please choose an option:\n" +
 					"1. upload a time series csv file\n" +
-					"2. algoritem setting\n" +
+					"2. algorithm settings\n" +
 					"3. detect anomalies\n" +
 					"4. display results\n" +
 					"5. upload anomalies and analyze results\n" +
 					"6. exit\n");
 		}
 	}
-
 
 	public class Command_1_UpCsvFile extends Command{//first Command//1//
 		public Command_1_UpCsvFile() {
@@ -81,42 +74,41 @@ public class Commands {
 		public void execute() {
 			//first upload//
 			dio.write("Please upload your local train CSV file.\n");
-
-			String csvFileTrainName = null;
-			String csvFileTestName = null;
 			try {
-				csvFileTrainName = dio.readText();
+				PrintWriter printWriter1;
+				printWriter1 = new PrintWriter(new FileWriter("anomalyTrain.csv"));
+				String line1 = dio.readText();
+				line1 = dio.readText();
+				while (!line1.equals("done")) {
+					printWriter1.println(line1);
+					line1 = dio.readText();
+				}
+				printWriter1.close();
+			}catch (FileNotFoundException e){
+				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			tsTrain = new TimeSeries(csvFileTrainName);
-			File trainFromClient = new File(csvFileTrainName);
-			File trainFile = new File("anomalyTrain.csv");
-			try {
-				Files.copy(trainFromClient.toPath() , trainFile.toPath());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			SharedState.tsTrain = new TimeSeries("anomalyTrain.csv");
 			dio.write("Upload complete.\n");
 
-			//second upload//
+
+			//second upload
 			dio.write("Please upload your local test CSV file.\n");
-			//
 			try {
-				csvFileTestName = dio.readText();
+				PrintWriter printWriter2;
+				printWriter2 =new PrintWriter(new FileWriter("anomalyTest.csv"));
+				String line2 = dio.readText();
+				while(!line2.equals("done")){
+					printWriter2.println(line2);
+					line2 = dio.readText();
+				}
+				printWriter2.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			tsTest = new TimeSeries(csvFileTrainName);
-			File testFromClient = new File(csvFileTestName);
-			File testFile = new File("anomalyTest.scv");
-			try {
-				Files.copy(testFromClient.toPath() , testFile.toPath());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			sharedState.tsTest = new TimeSeries("anomalyTest.csv");
 			dio.write("Upload complete.\n");
-			return;
 		}
 	}
 
@@ -127,17 +119,16 @@ public class Commands {
 
 		@Override
 		public void execute() {
-			sAd = new SimpleAnomalyDetector();
+			sharedState.sAd = new SimpleAnomalyDetector();
 			dio.write("The current correlation threshold is " +
-					sAd.CORRELATION_THRESHOLD + "\n");
+					sharedState.sAd.CORRELATION_THRESHOLD + "\n");
 			dio.write("Type a new threshold\n");
 			double newTresHold = (double) dio.readVal();
 			while (newTresHold <= 0 || newTresHold >= 1){
 				dio.write("please choose a value between 0 and 1.");
 				newTresHold = (double) dio.readVal();
 			}
-			sAd.CORRELATION_THRESHOLD = newTresHold;
-			return;
+			sharedState.sAd.CORRELATION_THRESHOLD = newTresHold;
 		}
 	}
 
@@ -148,11 +139,10 @@ public class Commands {
 
 		@Override
 		public void execute() {
-		sAd.learnNormal(tsTrain);
-		sAd.detect(tsTest);
+		sharedState.sAd.learnNormal(sharedState.tsTrain);
+		sharedState.sAd.detect(sharedState.tsTest);
 
-		dio.write("anomaly detection complete.");
-		return;
+		dio.write("anomaly detection complete.\n");
 		}
 	}
 
@@ -163,33 +153,38 @@ public class Commands {
 
 		@Override
 		public void execute() {
-			for(int i = 0 ; i < sAd.anomalyReports.size() ; i++){
-				dio.write(sAd.anomalyReports.get(i).timeStep +"\t" +
-						sAd.anomalyReports.get(i).description + "\n");
+			for(int i = 0 ; i < sharedState.sAd.anomalyReports.size() ; i++){
+				dio.write(sharedState.sAd.anomalyReports.get(i).timeStep +"\t" +
+						sharedState.sAd.anomalyReports.get(i).description + "\n");
 			}
 			dio.write("Done.\n");
-			return;
 		}
 	}
 
-	public class Command_5_UpAndAnalayze extends Command{
-		public Command_5_UpAndAnalayze() {
+	public class Command_5_UpAndAnalyze extends Command{
+		public Command_5_UpAndAnalyze() {
 			super("5. upload anomalies and analyze results\n");
 		}
 
 		@Override
 		public void execute() {
 			dio.write("Please upload your local anomalies file.\n");
+			try {
+				PrintWriter printWriter = new PrintWriter(new FileWriter("anomalies.txt"));
+				String line = dio.readText();
+				line = dio.readText();
+				while(!line.equals("done")){
+					printWriter.println(line);
+					line = dio.readText();
+				}
+				printWriter.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 
+			dio.write("Upload complete.\n");
 
 
 		}
 	}
-
-
-
-
-
-
-	
 }

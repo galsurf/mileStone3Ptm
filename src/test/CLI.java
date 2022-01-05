@@ -19,12 +19,12 @@ public class CLI {
 		commands.add(c.new Command_2_AlgoSetting());
 		commands.add(c.new Command_3_Detect());
 		commands.add(c.new Command_4_Results());
-		commands.add(c.new Command_5_UpAndAnalayze());
+		commands.add(c.new Command_5_UpAndAnalyze());
 	}
 
 	public void start() {
 
-		int commandFromClient;
+		int commandFromClient=0;
 		this.commands.get(0).execute();//print menu
 		while ( (commandFromClient = (int)dio.readVal()) != 6) {
 			if(commandFromClient < 1 || commandFromClient > 6)
