@@ -1,9 +1,7 @@
 package test;
 
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.util.ArrayList;
 
 public class Commands {
 	// Default IO interface
@@ -32,6 +30,17 @@ public class Commands {
 		public static TimeSeries tsTrain ;
 		public static TimeSeries tsTest ;
 		public SimpleAnomalyDetector sAd;
+
+		public static class Anomolies{
+			public int start;
+			public int end;
+			public Anomolies(int start , int end){
+				this.start = start;
+				this.end = end;
+			}
+		}
+		public static ArrayList<Anomolies> anomalies;
+		public static ArrayList<Anomolies> myAnomaliesReports;
 	}
 	
 	private  SharedState sharedState=new SharedState();
@@ -169,20 +178,45 @@ public class Commands {
 		@Override
 		public void execute() {
 			dio.write("Please upload your local anomalies file.\n");
+			sharedState.anomalies = new ArrayList<>();
 			try {
+				String[] anomoliesInt = new String[2];
 				PrintWriter printWriter = new PrintWriter(new FileWriter("anomalies.txt"));
 				String line = dio.readText();
 				line = dio.readText();
 				while(!line.equals("done")){
 					printWriter.println(line);
+					 anomoliesInt = line.split(",");
 					line = dio.readText();
 				}
+				sharedState.anomalies.add(new SharedState.Anomolies(Integer.parseInt(anomoliesInt[0]), Integer.parseInt(anomoliesInt[1])));
 				printWriter.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-
 			dio.write("Upload complete.\n");
+
+
+			sharedState.myAnomaliesReports = new ArrayList<>();
+			int i;
+			for(i = 0 ; i < sharedState.sAd.anomalyReports.size() - 1 ; i++){
+				if(((sharedState.sAd.anomalyReports.get(i).description).equals(sharedState.sAd.anomalyReports.get(i+1).description)
+						&& ((sharedState.sAd.anomalyReports.get(i).timeStep + 1) == (sharedState.sAd.anomalyReports.get(i+1).timeStep)))){
+					sharedState.myAnomaliesReports.add(new SharedState.Anomolies((int)(sharedState.sAd.anomalyReports.get(i).timeStep),
+							(int)(sharedState.sAd.anomalyReports.get(i+1).timeStep)));
+					int j = i + 1;
+
+					while(((j < sharedState.sAd.anomalyReports.size() - 1)
+							&& (sharedState.sAd.anomalyReports.get(j).description).equals(sharedState.sAd.anomalyReports.get(j+1).description)
+							&& (sharedState.sAd.anomalyReports.get(j).timeStep + 1 == sharedState.sAd.anomalyReports.get(j+1).timeStep))){
+						sharedState.myAnomaliesReports.get(sharedState.myAnomaliesReports.size() -1).end = (int) sharedState.sAd.anomalyReports.get(j+1).timeStep;
+						j++;
+					}
+					i=j;
+				}
+			}
+			dio.write("fuck you alll\n");
+
 
 
 		}
