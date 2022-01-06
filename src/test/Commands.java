@@ -1,6 +1,7 @@
 package test;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 public class Commands {
@@ -30,6 +31,12 @@ public class Commands {
 		public static TimeSeries tsTrain ;
 		public static TimeSeries tsTest ;
 		public SimpleAnomalyDetector sAd;
+		int numLineTestCsv;
+		int Negative;
+		int FP;
+		int TP;
+		int FN;
+		int TN;
 
 		public static class Anomolies{
 			public int start;
@@ -107,8 +114,11 @@ public class Commands {
 			try {
 				PrintWriter printWriter2;
 				printWriter2 =new PrintWriter(new FileWriter("anomalyTest.csv"));
+
+				sharedState.numLineTestCsv = 0;
 				String line2 = dio.readText();
 				while(!line2.equals("done")){
+					sharedState.numLineTestCsv++;
 					printWriter2.println(line2);
 					line2 = dio.readText();
 				}
@@ -117,6 +127,7 @@ public class Commands {
 				e.printStackTrace();
 			}
 			sharedState.tsTest = new TimeSeries("anomalyTest.csv");
+			sharedState.numLineTestCsv--;//minus one --> first line are letters//
 			dio.write("Upload complete.\n");
 		}
 	}
@@ -178,13 +189,16 @@ public class Commands {
 		@Override
 		public void execute() {
 			dio.write("Please upload your local anomalies file.\n");
+			int p = 0;
 			sharedState.anomalies = new ArrayList<>();
 			try {
 				String[] anomoliesInt = new String[2];
 				PrintWriter printWriter = new PrintWriter(new FileWriter("anomalies.txt"));
 				String line = dio.readText();
 				line = dio.readText();
+
 				while(!line.equals("done")){
+					p++;
 					printWriter.println(line);
 					 anomoliesInt = line.split(",");
 					line = dio.readText();
@@ -215,9 +229,50 @@ public class Commands {
 					i=j;
 				}
 			}
-			dio.write("fuck you alll\n");
+
+			int numOfAnomaliesSteps = 0 ;
+			for(int k = 0 ; k < sharedState.myAnomaliesReports.size() ; k++){
+				numOfAnomaliesSteps += (sharedState.myAnomaliesReports.get(k).end - sharedState.myAnomaliesReports.get(k).start) +1;
+			}
+			sharedState.Negative = sharedState.numLineTestCsv - numOfAnomaliesSteps;
+
+			sharedState.FN = 0;
+			sharedState.FP = 0;
+			sharedState.TN = 0;
+			sharedState.TP = 0;
+
+			for(int s = 0 ; s < sharedState.anomalies.size() ; s++){
+				for(int k = 0 ; k < sharedState.myAnomaliesReports.size() ; k++){
+					if((sharedState.anomalies.get(s).start >= sharedState.myAnomaliesReports.get(k).start
+							&& sharedState.anomalies.get(s).end <= sharedState.myAnomaliesReports.get(k).end)
+					||(sharedState.anomalies.get(s).start <= sharedState.myAnomaliesReports.get(k).end &&
+							sharedState.anomalies.get(s).end >= sharedState.myAnomaliesReports.get(k).end )
+							||(sharedState.anomalies.get(s).start <= sharedState.myAnomaliesReports.get(k).start &&
+							sharedState.anomalies.get(s).end >= sharedState.myAnomaliesReports.get(k).start)
+							||(sharedState.anomalies.get(s).start <= sharedState.myAnomaliesReports.get(k).start &&
+							sharedState.anomalies.get(s).end >= sharedState.myAnomaliesReports.get(k).end)){
+						sharedState.TP++;
+					}
+					else
+						sharedState.FP++;
+				}
+			}
+
+		dio.write("True Positive Rate: " +(new DecimalFormat("0.0").format((float)sharedState.TP / (float)p) + "\n"));
+		dio.write("False Positive Rate: " +(new DecimalFormat("0.00").format((float)sharedState.FP / (float)sharedState.Negative) + "\n"));
 
 
+
+
+
+
+
+
+
+
+
+
+			//float truePositiveRate =  /p;
 
 		}
 	}
