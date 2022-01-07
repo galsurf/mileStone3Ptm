@@ -1,6 +1,7 @@
 package test;
 
 import java.io.*;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
@@ -22,15 +23,22 @@ public class Commands {
 	}
 	
 	// you may add other helper classes here
-	
-	
+
+	public class Anomolies{
+		public int start;
+		public int end;
+		public Anomolies(int start , int end){
+			this.start = start;
+			this.end = end;
+		}
+	}
 	
 	// the shared state of all commands
 	private class SharedState{
 
-		public static TimeSeries tsTrain ;
-		public static TimeSeries tsTest ;
-		public SimpleAnomalyDetector sAd;
+		TimeSeries  tsTrain;
+		TimeSeries tsTest ;
+		SimpleAnomalyDetector sAd;
 		int numLineTestCsv;
 		int Negative;
 		int FP;
@@ -38,16 +46,8 @@ public class Commands {
 		int FN;
 		int TN;
 
-		public static class Anomolies{
-			public int start;
-			public int end;
-			public Anomolies(int start , int end){
-				this.start = start;
-				this.end = end;
-			}
-		}
-		public static ArrayList<Anomolies> anomalies;
-		public static ArrayList<Anomolies> myAnomaliesReports;
+		public  ArrayList<Anomolies> anomalies;
+		public  ArrayList<Anomolies> myAnomaliesReports;
 	}
 	
 	private  SharedState sharedState=new SharedState();
@@ -105,7 +105,7 @@ public class Commands {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			SharedState.tsTrain = new TimeSeries("anomalyTrain.csv");
+			sharedState.tsTrain = new TimeSeries("anomalyTrain.csv");
 			dio.write("Upload complete.\n");
 
 
@@ -201,9 +201,10 @@ public class Commands {
 					p++;
 					printWriter.println(line);
 					 anomoliesInt = line.split(",");
+					sharedState.anomalies.add(new Anomolies(Integer.parseInt(anomoliesInt[0]), Integer.parseInt(anomoliesInt[1])));
 					line = dio.readText();
 				}
-				sharedState.anomalies.add(new SharedState.Anomolies(Integer.parseInt(anomoliesInt[0]), Integer.parseInt(anomoliesInt[1])));
+
 				printWriter.close();
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -216,7 +217,7 @@ public class Commands {
 			for(i = 0 ; i < sharedState.sAd.anomalyReports.size() - 1 ; i++){
 				if(((sharedState.sAd.anomalyReports.get(i).description).equals(sharedState.sAd.anomalyReports.get(i+1).description)
 						&& ((sharedState.sAd.anomalyReports.get(i).timeStep + 1) == (sharedState.sAd.anomalyReports.get(i+1).timeStep)))){
-					sharedState.myAnomaliesReports.add(new SharedState.Anomolies((int)(sharedState.sAd.anomalyReports.get(i).timeStep),
+					sharedState.myAnomaliesReports.add(new Anomolies((int)(sharedState.sAd.anomalyReports.get(i).timeStep),
 							(int)(sharedState.sAd.anomalyReports.get(i+1).timeStep)));
 					int j = i + 1;
 
@@ -241,7 +242,9 @@ public class Commands {
 			sharedState.TN = 0;
 			sharedState.TP = 0;
 
+			int counterForTP;
 			for(int s = 0 ; s < sharedState.anomalies.size() ; s++){
+				counterForTP = 0;
 				for(int k = 0 ; k < sharedState.myAnomaliesReports.size() ; k++){
 					if((sharedState.anomalies.get(s).start >= sharedState.myAnomaliesReports.get(k).start
 							&& sharedState.anomalies.get(s).end <= sharedState.myAnomaliesReports.get(k).end)
@@ -251,29 +254,42 @@ public class Commands {
 							sharedState.anomalies.get(s).end >= sharedState.myAnomaliesReports.get(k).start)
 							||(sharedState.anomalies.get(s).start <= sharedState.myAnomaliesReports.get(k).start &&
 							sharedState.anomalies.get(s).end >= sharedState.myAnomaliesReports.get(k).end)){
-						sharedState.TP++;
+						counterForTP++;
 					}
-					else
-						sharedState.FP++;
 				}
+				if(counterForTP == 0)
+					sharedState.FN++;
 			}
 
-		dio.write("True Positive Rate: " +(new DecimalFormat("0.0").format((float)sharedState.TP / (float)p) + "\n"));
-		dio.write("False Positive Rate: " +(new DecimalFormat("0.00").format((float)sharedState.FP / (float)sharedState.Negative) + "\n"));
+			for (int j = 0; j < sharedState.myAnomaliesReports.size() ; j++) {
+				counterForTP = 0;
+				for (int r = 0; r < sharedState.anomalies.size(); r++) {
+					if(((sharedState.anomalies.get(r).start >= sharedState.myAnomaliesReports.get(j).start
+							&& sharedState.anomalies.get(r).end <= sharedState.myAnomaliesReports.get(j).end)
+							||(sharedState.anomalies.get(r).start <= sharedState.myAnomaliesReports.get(j).end &&
+							sharedState.anomalies.get(r).end >= sharedState.myAnomaliesReports.get(j).end )
+							||(sharedState.anomalies.get(r).start <= sharedState.myAnomaliesReports.get(j).start &&
+							sharedState.anomalies.get(r).end >= sharedState.myAnomaliesReports.get(j).start)
+							||(sharedState.anomalies.get(r).start <= sharedState.myAnomaliesReports.get(j).start &&
+							sharedState.anomalies.get(r).end >= sharedState.myAnomaliesReports.get(j).end))){
+						counterForTP++;
+					}
+				}
+				if(counterForTP > 0)
+					sharedState.TP++;
+				else
+					sharedState.FP++;
+			}
 
+			DecimalFormat df = new DecimalFormat("#0.0");
+			df.setMaximumFractionDigits(3);
+			df.setRoundingMode(RoundingMode.DOWN);
 
+			float truePositiveRate = ((float)sharedState.TP / (float)p);
+			float falsePositiveRate = ((float)sharedState.FP / (float)sharedState.Negative);
 
-
-
-
-
-
-
-
-
-
-			//float truePositiveRate =  /p;
-
+		dio.write("True Positive Rate: " + df.format(truePositiveRate) + "\n");
+		dio.write("False Positive Rate: " + df.format(falsePositiveRate)  + "\n");
 		}
 	}
 }
