@@ -34,6 +34,9 @@ public class CLI {
 				this.commands.get(0).execute();//print menu
 			}
 		}
+		if(commandFromClient == 6){
+			dio.write("bye");
+		}
 	}
 }
 

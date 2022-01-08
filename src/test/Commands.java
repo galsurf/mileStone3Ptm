@@ -94,7 +94,7 @@ public class Commands {
 				PrintWriter printWriter1;
 				printWriter1 = new PrintWriter(new FileWriter("anomalyTrain.csv"));
 				String line1 = dio.readText();
-				line1 = dio.readText();
+				//line1 = dio.readText();
 				while (!line1.equals("done")) {
 					printWriter1.println(line1);
 					line1 = dio.readText();
@@ -195,7 +195,7 @@ public class Commands {
 				String[] anomoliesInt = new String[2];
 				PrintWriter printWriter = new PrintWriter(new FileWriter("anomalies.txt"));
 				String line = dio.readText();
-				line = dio.readText();
+				//line = dio.readText();
 
 				while(!line.equals("done")){
 					p++;
